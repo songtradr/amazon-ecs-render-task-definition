@@ -16,6 +16,7 @@ async function run() {
     const storageSize = core.getInput('ephemeral-storage-size-in-gib', { required: false }) || '';
     const environmentVariablesFile = core.getInput('environment-file', { required: false }) || '';
     const secretsFile = core.getInput('secrets-file', { required: false }) || '';
+    const dataDogTags = core.getInput('datadog-tags', { required: false }) || '';
 
     // Parse the task definition
     const taskDefPath = path.isAbsolute(taskDefinitionFile) ?
@@ -55,6 +56,26 @@ async function run() {
         secretsFile :
         path.join(process.env.GITHUB_WORKSPACE, secretsFile);
       containerDef.secrets = require(secretsFilePath);
+    }
+
+    if(dataDogTags && containerDef.logConfiguration && containerDef.logConfiguration.options ) {
+      const options = containerDef.logConfiguration.options;
+      if (options['Name'] == 'datadog') {
+        options['dd_tags'] = dataDogTags;
+      }
+    }
+
+    const datadogAgentContainerDev = taskDefContents.containerDefinitions.find(function(element) {
+      return element.name == 'datadog-agent';
+    });
+
+    if (datadogAgentContainerDev && dataDogTags) {
+      const ddTagsEnv = datadogAgentContainerDev.environment.find(envVar => envVar.name === 'DD_TAGS')
+      if (ddTagsEnv) {
+        ddTagsEnv.value = dataDogTags;
+      } else {
+        datadogAgentContainerDev.environment.push({ name: 'DD_TAGS', value: dataDogTags });
+      }
     }
 
     if (memory) {
