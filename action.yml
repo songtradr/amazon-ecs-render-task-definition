@@ -48,6 +48,10 @@ inputs:
     description: 'JSON file containing environment secrets to mix in'
     required: false
     default: ''
+  datadog-tags:
+    description: 'Comma-separated list of Datadog tags to add to the container definition'
+    required: false
+    default: ''
 outputs:
   task-definition:
     description: 'The path to the rendered task definition file'
